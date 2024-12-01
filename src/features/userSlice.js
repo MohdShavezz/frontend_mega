@@ -1,6 +1,11 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { logIn } from "../services/api";
-
+const initialState = {
+  user: JSON.parse(localStorage.getItem("user")) || null,
+  token: localStorage.getItem("token") || null,
+  loading: false,
+  error: null,
+};
 // Thunk for login API call
 export const loginUser = createAsyncThunk(
   "user/login",
@@ -13,36 +18,32 @@ export const loginUser = createAsyncThunk(
     }
   }
 );
-
 const userSlice = createSlice({
   name: "user",
-  initialState: {
-    user: null,
-    token: null,
-    loading: false,
-    error: null,
-  },
+  initialState,
   reducers: {
-    // Logout action to clear user state
     logout(state) {
       state.user = null;
       state.token = null;
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
     },
   },
   extraReducers: (builder) => {
     builder
-      // Handle login pending
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      // Handle login success
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
         state.token = action.payload.user.token;
+
+        // Save to localStorage
+        localStorage.setItem("user", JSON.stringify(action.payload.user));
+        localStorage.setItem("token", action.payload.user.token);
       })
-      // Handle login failure
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
@@ -50,7 +51,5 @@ const userSlice = createSlice({
   },
 });
 
-// Exporting logout action for use
 export const { logout } = userSlice.actions;
-
 export default userSlice.reducer;
